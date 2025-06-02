@@ -1,0 +1,134 @@
+import customtkinter as ctk
+
+ctk.set_appearance_mode('dark')
+ctk.set_default_color_theme("green")
+
+app = ctk.CTk()
+app.geometry("300x480")
+app.title("Calculadora")
+app.resizable(False, False)
+
+display_text = ctk.StringVar()
+display_text.set("0")
+modo_atual = "Dec para Bin"
+
+tela = ctk.CTkEntry(app, textvariable=display_text, font=('lato',20,'bold'),state="readonly")
+tela.grid(row=0, column=0, columnspan=3,sticky='ew',padx=10,pady=10)
+
+def limpar_tela():
+    global display_text
+    display_text.set("0")
+
+def adicionar_digito(digito):
+    global display_text, modo_atual
+    atual = display_text.get()
+
+    if modo_atual == "Bin para Dec" and digito not in ['0', '1', '.']:
+        display_text.set("Erro: Apenas 0s/1s!")
+        return
+
+    if atual == "0" and digito != ".":
+        display_text.set(str(digito))
+    elif digito == "." and "." in atual:
+        return
+    else:
+        display_text.set(atual + str(digito))
+
+def apagar_ultimo():
+    global display_text
+    atual=display_text.get()
+    if len(atual)>1:
+        display_text.set(atual[:-1])
+    else:
+        display_text.set("0")
+
+def alternar_modo():
+    global modo_atual, display_text, botao_modo
+
+    limpar_tela()
+
+    if modo_atual == "Dec para Bin":
+        modo_atual = "Bin para Dec"
+        botao_modo.configure(text="Modo: Bin -> Dec")
+        
+        for btn_text in ['2','3','4','5','6','7','8','9','.']:
+            if botoes_num.get(btn_text):
+                botoes_num[btn_text].grid_remove()
+    else:
+        modo_atual = "Dec para Bin"
+        botao_modo.configure(text="Modo: Dec -> Bin")
+        
+        for btn_text in ["0","1","2", "3", "4", "5", "6", "7", "8", "9", "."]:
+            if botoes_num.get(btn_text): 
+                botoes_num[btn_text].grid()
+
+def fazer_conversao():
+    global display_text, modo_atual, botao_modo
+    valor_digitado = display_text.get()
+
+    try:
+        if modo_atual == "Dec para Bin":
+            num_decimal = int(valor_digitado)
+            if num_decimal < 0:
+                display_text.set("Erro: Positivo!")
+                return
+            resultado_binario = bin(num_decimal)[2:]
+            display_text.set(resultado_binario)
+        elif modo_atual == "Bin para Dec":
+            if not all(c in '01' for c in valor_digitado):
+                display_text.set("Erro: Só 0s e 1s!")
+                return
+            resultado_decimal = int(valor_digitado, 2)
+            display_text.set(str(resultado_decimal))
+    except ValueError:
+        display_text.set("Erro: Inválido!")
+
+botao_modo=ctk.CTkButton(app,text="Dec->Bin",command=alternar_modo,font=("Lato",14,"bold"),fg_color="blue")
+botao_modo.grid(column=0,row=1,columnspan=3,padx=10,pady=5,sticky="ew")
+
+
+botoes_num={}
+
+for i in range(3):
+    app.grid_columnconfigure(i, weight=1)
+for i in range(7):
+    app.grid_rowconfigure(i, weight=1)
+
+botoes_layout =[
+    ("7", 2, 0), ("8", 2, 1), ("9", 2, 2),
+    ("4", 3, 0), ("5", 3, 1), ("6", 3, 2),
+    ("1", 4, 0), ("2", 4, 1), ("3", 4, 2),
+    ("0", 5, 0), (".", 5, 1), ("DEL", 5, 2),
+    ("C", 6, 0),
+    ("=", 6, 1)
+]
+
+for (texto_btn, linha, coluna) in botoes_layout:
+    comando_btn = None
+    cor_btn = "gray"
+
+    if texto_btn == "C":
+        comando_btn = limpar_tela
+        cor_btn = "red"
+    elif texto_btn == "DEL":
+        comando_btn = apagar_ultimo
+        cor_btn = "red"
+    elif texto_btn == "=":
+        comando_btn = fazer_conversao
+        cor_btn = "green"
+    else:
+        comando_btn = lambda v=texto_btn: adicionar_digito(v)
+
+   
+    btn = ctk.CTkButton(app, text=texto_btn, command=comando_btn, font=("Lato", 16, "bold"), fg_color=cor_btn)
+
+    if texto_btn == "=":
+        btn.grid(row=linha, column=coluna, columnspan=2, padx=5, pady=5, sticky="nsew")
+    else:
+        btn.grid(row=linha, column=coluna, padx=5, pady=5, sticky="nsew")
+
+    
+    if texto_btn.isdigit() or texto_btn == ".":
+        botoes_num[texto_btn] = btn
+
+app.mainloop()
